@@ -67,9 +67,7 @@ section {
 .board {
   flex-grow: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 50px);
-  grid-template-rows: repeat(auto-fill, 50px);
-
+  /* We'll dynamically set grid-template-columns and rows in JS */
   background-color: #0c0c0c;
 
   /* GRID PATTERN  */
@@ -81,6 +79,8 @@ section {
 
 .block {
   border: none;
+  width: 50px; /* Ensure each block is fixed size */
+  height: 50px;
 }
 
 /* Snake */

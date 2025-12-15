@@ -1,15 +1,12 @@
 const board = document.querySelector('.board');
-const blockSize = 50;
 
-const cols = Math.floor(board.clientWidth / blockSize);
-const rows = Math.floor(board.clientHeight / blockSize);
-
+let blockSize;
+let cols, rows;
 const blocks = [];
 let snake = [{ x: 5, y: 5 }];
 let direction = "right";
 let score = 0;
 
-// Load saved high score
 let highScore = localStorage.getItem("snakeHighScore")
     ? Number(localStorage.getItem("snakeHighScore"))
     : 0;
@@ -21,44 +18,70 @@ let food;
 let time = 0;
 let timeInterval;
 
-// Build grid
-for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-        const block = document.createElement("div");
-        block.classList.add("block");
-        board.appendChild(block);
-        blocks[`${r},${c}`] = block;
+function setGridSize() {
+    // Use smaller block size on mobile screens
+    blockSize = window.innerWidth < 600 ? 25 : 50;
+
+    // Calculate number of columns and rows to fit in board size
+    cols = Math.floor(board.clientWidth / blockSize);
+    rows = Math.floor(board.clientHeight / blockSize);
+
+    board.style.gridTemplateColumns = `repeat(${cols}, ${blockSize}px)`;
+    board.style.gridTemplateRows = `repeat(${rows}, ${blockSize}px)`;
+}
+
+function buildGrid() {
+    board.innerHTML = ''; // clear previous blocks
+    blocks.length = 0; // reset blocks array
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const block = document.createElement("div");
+            block.classList.add("block");
+            block.style.width = blockSize + 'px';
+            block.style.height = blockSize + 'px';
+            board.appendChild(block);
+            blocks[`${r},${c}`] = block;
+        }
     }
 }
 
 function drawSnake() {
     snake.forEach(seg => {
-        blocks[`${seg.x},${seg.y}`].classList.add("fill");
+        if(blocks[`${seg.x},${seg.y}`]) {
+            blocks[`${seg.x},${seg.y}`].classList.add("fill");
+        }
     });
 }
 
 function clearSnake() {
     snake.forEach(seg => {
-        blocks[`${seg.x},${seg.y}`].classList.remove("fill");
+        if(blocks[`${seg.x},${seg.y}`]) {
+            blocks[`${seg.x},${seg.y}`].classList.remove("fill");
+        }
     });
 }
 
 function generateFood() {
-    if (food) {
+    if (food && blocks[`${food.x},${food.y}`]) {
         blocks[`${food.x},${food.y}`].classList.remove("food");
     }
 
-    food = {
-        x: Math.floor(Math.random() * rows),
-        y: Math.floor(Math.random() * cols)
-    };
+    let x, y;
+    do {
+        x = Math.floor(Math.random() * rows);
+        y = Math.floor(Math.random() * cols);
+    } while (snake.some(s => s.x === x && s.y === y));
 
-    blocks[`${food.x},${food.y}`].classList.add("food");
+    food = { x, y };
+
+    if(blocks[`${food.x},${food.y}`]) {
+        blocks[`${food.x},${food.y}`].classList.add("food");
+    }
 }
 
 function startTimer() {
     time = 0;
-
     clearInterval(timeInterval);
 
     timeInterval = setInterval(() => {
@@ -75,7 +98,6 @@ document.getElementById("start-btn").addEventListener("click", () => {
     snake = [{ x: 5, y: 5 }];
     direction = "right";
     score = 0;
-
     document.getElementById("score").innerText = score;
 
     clearSnake();
@@ -97,7 +119,6 @@ function gameLoop() {
     else if (direction === "up") head.x--;
     else if (direction === "down") head.x++;
 
-    // Game Over check
     if (
         head.x < 0 || head.x >= rows ||
         head.y < 0 || head.y >= cols ||
@@ -109,12 +130,10 @@ function gameLoop() {
         return;
     }
 
-    // Food eaten
     if (head.x === food.x && head.y === food.y) {
         score++;
         document.getElementById("score").innerText = score;
 
-        // HIGH SCORE UPDATE 🔥
         if (score > highScore) {
             highScore = score;
             localStorage.setItem("snakeHighScore", highScore);
@@ -132,10 +151,22 @@ function gameLoop() {
     drawSnake();
 }
 
-// Controls
 document.addEventListener("keydown", e => {
     if (e.key === "ArrowUp" && direction !== "down") direction = "up";
     if (e.key === "ArrowDown" && direction !== "up") direction = "down";
     if (e.key === "ArrowLeft" && direction !== "right") direction = "left";
     if (e.key === "ArrowRight" && direction !== "left") direction = "right";
 });
+
+// On load and resize recalc grid
+function init() {
+    setGridSize();
+    buildGrid();
+    drawSnake();
+    if(food) {
+        blocks[`${food.x},${food.y}`].classList.add("food");
+    }
+}
+
+window.addEventListener("load", init);
+window.addEventListener("resize", init);
